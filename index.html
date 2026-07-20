@@ -3,549 +3,528 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中国語単語学習ツール (Chinese Vocabulary Builder)</title>
+    <title>中国語 単語カード（音声＆ランダム機能付き）</title>
     <style>
         :root {
-            --bg-color: #121214;
-            --card-bg: #1e1e24;
-            --primary: #4f46e5;
-            --primary-hover: #6366f1;
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border: #374151;
-            --accent: #10b981;
+            --primary-color: #4a90e2;
+            --secondary-color: #f5a623;
+            --audio-color: #e74c3c;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
         }
 
         body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
             background-color: var(--bg-color);
-            color: var(--text);
+            color: var(--text-color);
             margin: 0;
             padding: 20px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 600px;
-            background-color: var(--card-bg);
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            border: 1px solid var(--border);
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
             text-align: center;
-            margin-top: 0;
-            margin-bottom: 25px;
-            color: var(--text);
-            letter-spacing: 0.5px;
         }
 
-        /* 設定セクション */
-        .settings-panel {
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-
-        .section-title {
-            font-size: 13px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-
-        .setting-row {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .setting-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .mode-select-container {
-            display: flex;
-            gap: 8px;
-        }
-
-        .mode-btn {
-            flex: 1;
-            background-color: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .mode-btn.active {
-            background-color: var(--primary);
-            border-color: var(--primary);
-            color: white;
-            font-weight: bold;
-        }
-
-        .checkbox-group {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .checkbox-label input {
-            cursor: pointer;
-            accent-color: var(--primary);
-            width: 16px;
-            height: 16px;
-        }
-
-        /* 進捗バー */
-        .progress-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .progress-bar-bg {
-            flex-grow: 1;
-            height: 6px;
-            background-color: var(--border);
-            border-radius: 3px;
-            margin: 0 12px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            width: 0%;
-            background-color: var(--accent);
-            transition: width 0.3s ease;
-        }
-
-        /* クイズカード */
-        .flashcard {
-            background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 40px 20px;
-            text-align: center;
-            min-height: 180px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 24px;
-            position: relative;
-        }
-
-        /* チラ見え防止のための隠し状態スタイル */
-        .word-element {
-            opacity: 1;
-            transition: opacity 0.2s ease;
+        .controls {
+            margin-bottom: 15px;
             width: 100%;
-        }
-
-        .word-element.hidden-content {
-            visibility: hidden; /* 表示OFFのときはDOM空間は保持しつつ完全に非表示 */
-            opacity: 0;
-        }
-
-        /* 切り替え時の一瞬の非表示クラス */
-        .switching {
-            visibility: hidden !important;
-            opacity: 0 !important;
-        }
-
-        .lesson-tag {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            font-size: 11px;
-            background-color: var(--border);
-            padding: 2px 8px;
-            border-radius: 4px;
-            color: var(--text-muted);
-        }
-
-        .cn-character {
-            font-size: 42px;
-            font-weight: bold;
-            margin-bottom: 12px;
-            color: white;
-            min-height: 50px;
-            line-height: 1.2;
-        }
-
-        .cn-pinyin {
-            font-size: 18px;
-            color: var(--accent);
-            margin-bottom: 16px;
-            min-height: 24px;
-            font-family: 'Lucida Sans', 'Lucida Grande', sans-serif;
-        }
-
-        .jp-meaning {
-            font-size: 16px;
-            color: var(--text-muted);
-            min-height: 22px;
-        }
-
-        /* コントロールボタン */
-        .control-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .action-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 14px;
-            font-size: 15px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .action-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .secondary-btns {
+            max-width: 500px;
             display: flex;
             gap: 10px;
         }
 
-        .secondary-btn {
-            flex: 1;
-            background-color: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 10px;
-            font-size: 13px;
+        select {
+            flex: 2;
+            padding: 12px;
+            font-size: 1rem;
             border-radius: 8px;
+            border: 1px solid #ccc;
+            background-color: white;
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .secondary-btn:hover {
-            background-color: rgba(255,255,255,0.05);
+        /* ランダム切り替えボタン */
+        .btn-mode {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-mode.active {
+            background-color: #34495e;
+            color: white;
+            border-color: #34495e;
         }
 
-        .audio-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 5px;
+        .progress {
+            font-size: 0.9rem;
+            color: #666;
             margin-bottom: 10px;
-            transition: color 0.2s;
         }
 
-        .audio-btn:hover {
+        /* 単語カード本体 */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 280px;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .word-tag {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #e1f0ff;
+            color: var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .simplified {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #111;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .display-field {
+            font-size: 1.3rem;
+            min-height: 1.8rem;
+            margin: 8px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .pinyin-field { color: #2c3e50; }
+        .meaning-field { color: #27ae60; }
+        
+        .hidden-text {
+            visibility: hidden;
+        }
+
+        /* 押しやすい操作ボタン群 */
+        .toggle-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 12px;
+        }
+
+        .btn-toggle {
+            background-color: #e0e0e0;
+            color: #333;
+            border: none;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .btn-toggle.active {
+            background-color: var(--primary-color);
             color: white;
         }
 
-        .audio-btn svg {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
+        /* 音声再生用のでかいボタン */
+        .audio-container {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 15px;
+        }
+
+        .btn-audio {
+            width: 100%;
+            background-color: var(--audio-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .btn-nav {
+            border: none;
+            padding: 18px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+
+        .btn-prev {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-next {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-nav:active, .btn-toggle:active, .btn-audio:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>中国語単語学習ツール</h1>
+    <h1>中国語 単語カード</h1>
 
-    <!-- 設定パネル -->
-    <div class="settings-panel">
-        <!-- 出題モード設定 -->
-        <div class="setting-row">
-            <div class="section-title">出題モード</div>
-            <div class="mode-select-container">
-                <button class="mode-btn active" id="mode-sequential" onclick="setMode('sequential')">教科書順</button>
-                <button class="mode-btn" id="mode-lesson-random" onclick="setMode('lesson-random')">課内ランダム</button>
-                <button class="mode-btn" id="mode-all-random" onclick="setMode('all-random')">全ランダム</button>
-            </div>
+    <div class="controls">
+        <!-- 課の切り替え -->
+        <select id="sectionSelect" onchange="changeSection()">
+            <option value="all">すべて表示 (71語)</option>
+            <option value="発音編">発音編 (40語)</option>
+            <option value="第一課">第一課 (20語)</option>
+            <option value="第二課">第二課 (9語)</option>
+            <option value="第三課">第三課 (7語)</option>
+            <option value="第四課">第四課 (17語)</option>
+        </select>
+        <!-- ランダムボタン -->
+        <button id="btnShuffle" class="btn-mode" onclick="toggleShuffle()">並び順: 教科書</button>
+    </div>
+
+    <div class="progress" id="progressText">1 / 71</div>
+
+    <!-- カード本体 -->
+    <div class="card">
+        <div class="word-tag" id="wordTag">発音編</div>
+        <div class="simplified" id="wordSimplified">干杯</div>
+        <div class="display-field pinyin-field" id="wordPinyinField">
+            <span id="wordPinyin" class="hidden-text">gānbēi</span>
         </div>
-
-        <!-- 表示設定 -->
-        <div class="setting-row" style="margin-top: 20px;">
-            <div class="section-title">表示アイテム設定</div>
-            <div class="checkbox-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="show-kanji" checked onchange="updateDisplayVisibility()"> 漢字を表示
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="show-pinyin" checked onchange="updateDisplayVisibility()"> ピンインを表示
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="show-meaning" checked onchange="updateDisplayVisibility()"> 意味を表示
-                </label>
-            </div>
+        <div class="display-field meaning-field" id="wordMeaningField">
+            <span id="wordMeaning" class="hidden-text">乾杯する</span>
         </div>
     </div>
 
-    <!-- 進捗バー -->
-    <div class="progress-container">
-        <span id="progress-text">0 / 0</span>
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progress-fill"></div>
-        </div>
-        <span id="lesson-info">-</span>
-    </div>
-
-    <!-- フラッシュカード本体 -->
-    <div class="flashcard">
-        <div id="lesson-tag" class="lesson-tag">第1課</div>
-        
-        <!-- 音声再生ボタン -->
-        <button class="audio-btn" onclick="speakCurrentWord()" title="音声を再生">
-            <svg viewBox="0 0 24 24">
-                <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.07,19.86 21,16.28 21,12C21,7.72 18.07,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/>
-            </svg>
+    <!-- 音声再生ボタン -->
+    <div class="audio-container">
+        <button class="btn-audio" onclick="speakCurrentWord()">
+            🔊 発音を聞く (音声再生)
         </button>
-
-        <!-- 各要素の表示エリア（チラ見え防止のラッパー） -->
-        <div id="card-content-wrapper">
-            <div id="display-kanji" class="cn-character word-element">你好</div>
-            <div id="display-pinyin" class="cn-pinyin word-element">nǐ hǎo</div>
-            <div id="display-meaning" class="jp-meaning word-element">こんにちは</div>
-        </div>
     </div>
 
-    <!-- コントロールボタン -->
-    <div class="control-panel">
-        <button class="action-btn" onclick="nextWord()">
-            次へ進む
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-        <div class="secondary-btns">
-            <button class="secondary-btn" onclick="previousWord()">前へ</button>
-            <button class="secondary-btn" onclick="resetQuiz()">最初から</button>
-        </div>
+    <!-- 切り替えボタン -->
+    <div class="toggle-buttons">
+        <button id="btnPinyin" class="btn-toggle" onclick="toggleDisplay('pinyin')">ピンイン 表示</button>
+        <button id="btnMeaning" class="btn-toggle" onclick="toggleDisplay('meaning')">意味 表示</button>
     </div>
-</div>
 
-<script>
-    // サンプル単語データ（教科書や課ごとのデータを想定）
-    const vocabularyList = [
-        { lesson: 1, kanji: "你好", pinyin: "nǐ hǎo", meaning: "こんにちは" },
-        { lesson: 1, kanji: "谢谢", pinyin: "xièxie", meaning: "ありがとう" },
-        { lesson: 1, kanji: "再见", pinyin: "zàijiàn", meaning: "さようなら" },
-        { lesson: 1, kanji: "我", pinyin: "wǒ", meaning: "わたし" },
-        { lesson: 2, kanji: "什么", pinyin: "shénme", meaning: "何" },
-        { lesson: 2, kanji: "名字", pinyin: "míngzi", meaning: "名前" },
-        { lesson: 2, kanji: "高兴", pinyin: "gāoxìng", meaning: "うれしい" },
-        { lesson: 3, kanji: "喝", pinyin: "hē", meaning: "飲む" },
-        { lesson: 3, kanji: "茶", pinyin: "chá", meaning: "お茶" },
-        { lesson: 3, kanji: "咖啡", pinyin: "kāfēi", meaning: "コーヒー" }
-    ];
+    <!-- ナビゲーションボタン -->
+    <div class="nav-buttons">
+        <button class="btn-nav btn-prev" onclick="prevWord()">戻る</button>
+        <button class="btn-nav btn-next" onclick="nextWord()">次の単語に進む</button>
+    </div>
 
-    let currentMode = 'sequential'; // 'sequential', 'lesson-random', 'all-random'
-    let quizQueue = [];
-    let currentIndex = 0;
-
-    // 初期化
-    window.onload = function() {
-        initQuiz();
-    };
-
-    // クイズキューの構築と初期化
-    function initQuiz() {
-        currentIndex = 0;
-        buildQueue();
-        showWord();
-    }
-
-    // モードに基づいて問題の順序（キュー）を作成する
-    function buildQueue() {
-        if (currentMode === 'sequential') {
-            // 1. 教科書順モード：そのままの順序
-            quizQueue = [...vocabularyList];
-        } 
-        else if (currentMode === 'lesson-random') {
-            // 2. 課内ランダムモード：課の順番(1課->2課->3課)は維持しつつ、各課の中身をシャッフル
-            quizQueue = [];
-            // まずどんな課があるか抽出
-            const lessons = [...new Set(vocabularyList.map(item => item.lesson))].sort((a, b) => a - b);
+    <script>
+        // 全単語データ構造
+        const allVocabulary = [
+            // 発音編
+            { section: "発音編", simplified: "干杯", pinyin: "gānbēi", meaning: "乾杯する" },
+            { section: "発音編", simplified: "司机", pinyin: "sījī", meaning: "運転手" },
+            { section: "発音編", simplified: "中国", pinyin: "Zhōngguó", meaning: "中国" },
+            { section: "発音編", simplified: "安全", pinyin: "ānquán", meaning: "安全" },
+            { section: "発音編", simplified: "工厂", pinyin: "gōngchǎng", meaning: "工場" },
+            { section: "発音編", simplified: "铅笔", pinyin: "qiānbǐ", meaning: "鉛筆" },
+            { section: "発音編", simplified: "工作", pinyin: "gōngzuò", meaning: "仕事" },
+            { section: "発音編", simplified: "声调", pinyin: "shēngdiào", meaning: "声調" },
+            { section: "発音編", simplified: "妈妈", pinyin: "māma", meaning: "お母さん" },
+            { section: "発音編", simplified: "衣服", pinyin: "yīfu", meaning: "衣服" },
+            { section: "発音編", simplified: "国家", pinyin: "guójiā", meaning: "国家" },
+            { section: "発音編", simplified: "明天", pinyin: "míngtiān", meaning: "明日" },
+            { section: "発音編", simplified: "同学", pinyin: "tóngxué", meaning: "クラスメート" },
+            { section: "発音編", simplified: "红茶", pinyin: "hóngchá", meaning: "紅茶" },
+            { section: "発音編", simplified: "词典", pinyin: "cídiǎn", meaning: "辞典" },
+            { section: "発音編", simplified: "牛奶", pinyin: "niúnǎi", meaning: "牛乳" },
+            { section: "発音編", simplified: "杂志", pinyin: "zázhì", meaning: "雑誌" },
+            { section: "発音編", simplified: "学校", pinyin: "xuéxiào", meaning: "学校" },
+            { section: "発音編", simplified: "学生", pinyin: "xuésheng", meaning: "学生" },
+            { section: "発音編", simplified: "鼻子", pinyin: "bízi", meaning: "鼻" },
+            { section: "発音編", simplified: "北京", pinyin: "Běijīng", meaning: "北京" },
+            { section: "発音編", simplified: "老师", pinyin: "lǎoshī", meaning: "先生" },
+            { section: "発音編", simplified: "网球", pinyin: "wǎngqiú", meaning: "テニス" },
+            { section: "発音編", simplified: "祖国", pinyin: "zǔguó", meaning: "祖国" },
+            { section: "発音編", simplified: "手表", pinyin: "shǒubiǎo", meaning: "腕時計" },
+            { section: "発音編", simplified: "你好", pinyin: "nǐhǎo", meaning: "こんにちは" },
+            { section: "発音編", simplified: "考试", pinyin: "kǎoshì", meaning: "試験" },
+            { section: "発音編", simplified: "感谢", pinyin: "gǎnxiè", meaning: "感謝" },
+            { section: "発音編", simplified: "姐姐", pinyin: "jiějie", meaning: "おねえさん" },
+            { section: "発音編", simplified: "椅子", pinyin: "yīzi", meaning: "椅子" },
+            { section: "発音編", simplified: "大家", pinyin: "dàjiā", meaning: "みんな" },
+            { section: "発音編", simplified: "汽车", pinyin: "qìchē", meaning: "自動車" },
+            { section: "発音編", simplified: "练习", pinyin: "liànxí", meaning: "練習" },
+            { section: "発音編", simplified: "大学", pinyin: "dàxué", meaning: "大学" },
+            { section: "発音編", simplified: "日本", pinyin: "Rìběn", meaning: "日本" },
+            { section: "発音編", simplified: "汉语", pinyin: "Hànyǔ", meaning: "中国語" },
+            { section: "発音編", simplified: "再见", pinyin: "zài jiàn", meaning: "再見" },
+            { section: "発音編", simplified: "电话", pinyin: "diànhuà", meaning: "電話" },
+            { section: "発音編", simplified: "妹妹", pinyin: "mèimei", meaning: "妹" },
+            { section: "発音編", simplified: "弟弟", pinyin: "dìdi", meaning: "弟" },
             
-            lessons.forEach(l => {
-                // 課ごとにフィルタリングしてシャッフル
-                const lessonWords = vocabularyList.filter(item => item.lesson === l);
-                shuffleArray(lessonWords);
-                quizQueue = quizQueue.concat(lessonWords);
-            });
-        } 
-        else if (currentMode === 'all-random') {
-            // 3. 全ランダムモード：全体のリストを完全にシャッフル
-            quizQueue = [...vocabularyList];
-            shuffleArray(quizQueue);
+            // 第一課
+            { section: "第一課", simplified: "北京", pinyin: "Běijīng", meaning: "北京" },
+            { section: "第一課", simplified: "机场", pinyin: "jīchǎng", meaning: "空港" },
+            { section: "第一課", simplified: "您好", pinyin: "nín hǎo", meaning: "こんにちは" },
+            { section: "第一課", simplified: "我", pinyin: "wǒ", meaning: "私、ぼく" },
+            { section: "第一課", simplified: "是", pinyin: "shì", meaning: "〜は〜です" },
+            { section: "第一課", simplified: "田中幸子", pinyin: "Tiánzhōng Xìngzǐ", meaning: "田中幸子" },
+            { section: "第一課", simplified: "欢迎", pinyin: "huānyíng", meaning: "歓迎する" },
+            { section: "第一課", simplified: "请问", pinyin: "qǐngwèn", meaning: "おたずねします" },
+            { section: "第一課", simplified: "您", pinyin: "nín", meaning: "あなた（敬称）" },
+            { section: "第一課", simplified: "贵姓", pinyin: "guìxìng", meaning: "お名前" },
+            { section: "第一課", simplified: "姓", pinyin: "xìng", meaning: "（苗字を）〜という" },
+            { section: "第一課", simplified: "叫", pinyin: "jiào", meaning: "（名前は）〜という" },
+            { section: "第一課", simplified: "张明明", pinyin: "Zhāng Míngmíng", meaning: "張明明" },
+            { section: "第一課", simplified: "北京人", pinyin: "Běijīngrén", meaning: "北京の人" },
+            { section: "第一課", simplified: "吗", pinyin: "ma", meaning: "〜か" },
+            { section: "第一課", simplified: "不", pinyin: "bù", meaning: "いいえ、〜ない" },
+            { section: "第一課", simplified: "上海人", pinyin: "Shànghǎirén", meaning: "上海の人" },
+            { section: "第一課", simplified: "以后", pinyin: "yǐhòu", meaning: "以後、…の後" },
+            { section: "第一課", simplified: "请多关照", pinyin: "qǐng duō guānzhào", meaning: "よろしくお願いします" },
+            { section: "第一課", simplified: "不客气", pinyin: "bú kèqi", meaning: "どういたしまして" },
+
+            // 第二課
+            { section: "第二課", simplified: "留学生", pinyin: "liúxuéshēng", meaning: "留学生" },
+            { section: "第二課", simplified: "宿舍", pinyin: "sùshè", meaning: "宿舎、寮" },
+            { section: "第二課", simplified: "这", pinyin: "zhè", meaning: "この、その、これ" },
+            { section: "第二課", simplified: "你", pinyin: "nǐ", meaning: "あなた" },
+            { section: "第二課", simplified: "的", pinyin: "de", meaning: "～の" },
+            { section: "第二課", simplified: "电脑", pinyin: "diànnǎo", meaning: "コンピューター" },
+            { section: "第二課", simplified: "对", pinyin: "duì", meaning: "正しい、その通り" },
+            { section: "第二課", simplified: "打印机", pinyin: "dǎyìnjī", meaning: "プリンター" },
+            { section: "第二課", simplified: "也", pinyin: "yě", meaning: "～も" },
+            { section: "第二課", simplified: "那", pinyin: "nà", meaning: "あの、その、あれ" },
+            { section: "第二課", simplified: "山本", pinyin: "Shānběn", meaning: "山本" },
+            { section: "第二課", simplified: "欸", pinyin: "éi", meaning: "おや、ねえ" },
+            { section: "第二課", simplified: "喝", pinyin: "hē", meaning: "飲む" },
+            { section: "第二課", simplified: "茶", pinyin: "chá", meaning: "お茶" },
+            { section: "第二課", simplified: "日本", pinyin: "Rìběn", meaning: "日本" },
+            { section: "第二課", simplified: "绿茶", pinyin: "lǜchá", meaning: "緑茶" },
+            { section: "第二課", simplified: "好", pinyin: "hǎo", meaning: "よい、よろしい" },
+            { section: "第二課", simplified: "谢谢", pinyin: "xièxie", meaning: "ありがとう" },
+
+            // 第三課
+            { section: "第三課", simplified: "课堂", pinyin: "kètáng", meaning: "教室" },
+            { section: "第三課", simplified: "大家", pinyin: "dàjiā", meaning: "みんな" },
+            { section: "第三課", simplified: "今年", pinyin: "jīnnián", meaning: "今年" },
+            { section: "第三課", simplified: "岁", pinyin: "suì", meaning: "歳" },
+            { section: "第三課", simplified: "有", pinyin: "yǒu", meaning: "ある、いる" },
+            { section: "第三課", simplified: "两", pinyin: "liǎng", meaning: "2、ふたつ" },
+            { section: "第三課", simplified: "个", pinyin: "ge", meaning: "個" },
+            { section: "第三課", simplified: "弟弟", pinyin: "dìdi", meaning: "弟" },
+            { section: "第三課", simplified: "爸爸", pinyin: "bàba", meaning: "お父さん、父" },
+            { section: "第三課", simplified: "妈妈", pinyin: "māma", meaning: "お母さん、母" },
+            { section: "第三課", simplified: "都", pinyin: "dōu", meaning: "みな、全て" },
+            { section: "第三課", simplified: "喜欢", pinyin: "xǐhuan", meaning: "好む、好きである" },
+            { section: "第三課", simplified: "中国", pinyin: "Zhōngguó", meaning: "中国" },
+            { section: "第三課", simplified: "文学", pinyin: "wénxué", meaning: "文学" },
+            { section: "第三課", simplified: "鼓掌", pinyin: "gǔzhǎng", meaning: "拍手する" },
+
+            // 第四課
+            { section: "第四課", simplified: "天安门", pinyin: "Tiān'ānmén", meaning: "天安門" },
+            { section: "第四課", simplified: "广场", pinyin: "guǎngchǎng", meaning: "広場" },
+            { section: "第四課", simplified: "真", pinyin: "zhēn", meaning: "確かに、本当に" },
+            { section: "第四課", simplified: "大", pinyin: "dà", meaning: "大きい" },
+            { section: "第四課", simplified: "啊", pinyin: "a", meaning: "ああ、～よ、～ね" },
+            { section: "第四課", simplified: "大约", pinyin: "dàyuē", meaning: "大体、およそ" },
+            { section: "第四課", simplified: "平方米", pinyin: "píngfāngmǐ", meaning: "平方メートル" },
+            { section: "第四課", simplified: "故宫", pinyin: "Gùgōng", meaning: "故宫" },
+            { section: "第四課", simplified: "在", pinyin: "zài", meaning: "ある、いる" },
+            { section: "第四課", simplified: "哪儿", pinyin: "nǎr", meaning: "どこ" },
+            { section: "第四課", simplified: "后边儿", pinyin: "hòubianr", meaning: "後ろ" },
+            { section: "第四課", simplified: "人民大会堂", pinyin: "Rénmín Dàhuìtáng", meaning: "人民大会堂" },
+            { section: "第四課", simplified: "前边儿", pinyin: "qiánbianr", meaning: "前" },
+            { section: "第四課", simplified: "先", pinyin: "xiān", meaning: "先に、まず" },
+            { section: "第四課", simplified: "去", pinyin: "qù", meaning: "行く、出かける" },
+            { section: "第四課", simplified: "国家博物馆", pinyin: "Guójiā Bówùguǎn", meaning: "国家博物館" },
+            { section: "第四課", simplified: "吧", pinyin: "ba", meaning: "～しましょう" }
+        ];
+
+        let currentList = [...allVocabulary];
+        let currentIndex = 0;
+        let isPinyinVisible = false;
+        let isMeaningVisible = false;
+        let isShuffleMode = false;
+
+        // 音声再生関数 (Web Speech API)
+        function speakCurrentWord() {
+            if (currentList.length === 0) return;
+            const text = currentList[currentIndex].simplified;
+            
+            // 以前の発音をキャンセル
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN'; // 中国語（大陸）に設定
+            utterance.rate = 0.8;    // 少しゆっくりめで聞き取りやすく
+            
+            window.speechSynthesis.speak(utterance);
         }
-    }
 
-    // 配列のシャッフル（フィッシャー・イェーツ）
-    function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+        // 状態を画面に反映
+        function updateCard() {
+            if (currentList.length === 0) {
+                document.getElementById("wordSimplified").innerText = "単語がありません";
+                document.getElementById("wordPinyin").innerText = "";
+                document.getElementById("wordMeaning").innerText = "";
+                document.getElementById("progressText").innerText = "0 / 0";
+                return;
+            }
+
+            const currentWord = currentList[currentIndex];
+            document.getElementById("wordTag").innerText = currentWord.section;
+            document.getElementById("wordSimplified").innerText = currentWord.simplified;
+            document.getElementById("wordPinyin").innerText = currentWord.pinyin;
+            document.getElementById("wordMeaning").innerText = currentWord.meaning;
+            
+            document.getElementById("progressText").innerText = `${currentIndex + 1} / ${currentList.length}`;
+
+            // 表示状態の適用
+            const pinyinEl = document.getElementById("wordPinyin");
+            const btnPinyin = document.getElementById("btnPinyin");
+            if (isPinyinVisible) {
+                pinyinEl.classList.remove("hidden-text");
+                btnPinyin.classList.add("active");
+            } else {
+                pinyinEl.classList.add("hidden-text");
+                btnPinyin.classList.remove("active");
+            }
+
+            const meaningEl = document.getElementById("wordMeaning");
+            const btnMeaning = document.getElementById("btnMeaning");
+            if (isMeaningVisible) {
+                meaningEl.classList.remove("hidden-text");
+                btnMeaning.classList.add("active");
+            } else {
+                meaningEl.classList.add("hidden-text");
+                btnMeaning.classList.remove("active");
+            }
         }
-    }
 
-    // モード切り替え
-    function setMode(mode) {
-        currentMode = mode;
-        
-        // ボタンのスタイル更新
-        document.getElementById('mode-sequential').classList.remove('active');
-        document.getElementById('mode-lesson-random').classList.remove('active');
-        document.getElementById('mode-all-random').classList.remove('active');
-        
-        document.getElementById(`mode-${mode}`).classList.add('active');
-        
-        // クイズのリセットと再構築
-        initQuiz();
-    }
-
-    // 現在の単語を画面に表示する
-    function showWord() {
-        if (quizQueue.length === 0) return;
-        
-        const wrapper = document.getElementById('card-content-wrapper');
-        
-        // 【重要】チラ見え防止対策：新データ書き換え前にラッパーごと完全に非表示(visibility: hidden)にする
-        wrapper.classList.add('switching');
-        
-        const currentWord = quizQueue[currentIndex];
-        
-        // 各要素のテキストをセット
-        document.getElementById('lesson-tag').innerText = `第 ${currentWord.lesson} 課`;
-        document.getElementById('display-kanji').innerText = currentWord.kanji;
-        document.getElementById('display-pinyin').innerText = currentWord.pinyin;
-        document.getElementById('display-meaning').innerText = currentWord.meaning;
-        
-        // 進捗表示の更新
-        document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${quizQueue.length}`;
-        document.getElementById('lesson-info').innerText = `モード: ${getModeName(currentMode)}`;
-        
-        const progressPercent = ((currentIndex + 1) / quizQueue.length) * 100;
-        document.getElementById('progress-fill').style.width = `${progressPercent}%`;
-        
-        // 表示・非表示の個別チェックボックス状態を適用
-        updateDisplayVisibility();
-        
-        // ブラウザのレンダリングを挟むためにごく短いディレイの後に表示クラスを外す（チラ見えを完全に防ぐ）
-        setTimeout(() => {
-            wrapper.classList.remove('switching');
-        }, 30);
-    }
-
-    // チェックボックスの状態に合わせて表示・非表示を切り替える
-    function updateDisplayVisibility() {
-        const showKanji = document.getElementById('show-kanji').checked;
-        const showPinyin = document.getElementById('show-pinyin').checked;
-        const showMeaning = document.getElementById('show-meaning').checked;
-        
-        toggleElementVisibility('display-kanji', showKanji);
-        toggleElementVisibility('display-pinyin', showPinyin);
-        toggleElementVisibility('display-meaning', showMeaning);
-    }
-
-    // 要素の非表示切り替えヘルパー (display:noneだとレイアウトが崩れるため、位置を保つhidden-contentを使用)
-    function toggleElementVisibility(elementId, isVisible) {
-        const el = document.getElementById(elementId);
-        if (isVisible) {
-            el.classList.remove('hidden-content');
-        } else {
-            el.classList.add('hidden-content');
+        // 表示・非表示のトグル
+        function toggleDisplay(type) {
+            if (type === 'pinyin') {
+                isPinyinVisible = !isPinyinVisible;
+            } else if (type === 'meaning') {
+                isMeaningVisible = !isMeaningVisible;
+            }
+            updateCard();
         }
-    }
 
-    // 次の単語へ進む
-    function nextWord() {
-        if (currentIndex < quizQueue.length - 1) {
-            currentIndex++;
-            showWord();
-        } else {
-            alert('最後の単語です！最初に戻ります。');
+        function resetVisibility() {
+            isPinyinVisible = false;
+            isMeaningVisible = false;
+        }
+
+        function nextWord() {
+            if (currentList.length === 0) return;
+            resetVisibility();
+            currentIndex = (currentIndex + 1) % currentList.length;
+            updateCard();
+        }
+
+        function prevWord() {
+            if (currentList.length === 0) return;
+            resetVisibility();
+            currentIndex = (currentIndex - 1 + currentList.length) % currentList.length;
+            updateCard();
+        }
+
+        // 課のフィルター切り替え
+        function changeSection() {
+            applyFilterAndOrder();
+        }
+
+        // ランダムモードのトグル
+        function toggleShuffle() {
+            isShuffleMode = !isShuffleMode;
+            const btn = document.getElementById("btnShuffle");
+            if (isShuffleMode) {
+                btn.innerText = "並び順: ランダム";
+                btn.classList.add("active");
+            } else {
+                btn.innerText = "並び順: 教科書";
+                btn.classList.remove("active");
+            }
+            applyFilterAndOrder();
+        }
+
+        // フィルターと並び順を同時に適用するロジック
+        function applyFilterAndOrder() {
+            const selected = document.getElementById("sectionSelect").value;
+            
+            // 1. まずフィルター
+            if (selected === "all") {
+                currentList = [...allVocabulary];
+            } else {
+                currentList = allVocabulary.filter(word => word.section === selected);
+            }
+
+            // 2. 次に並び替え（ランダムならシャッフル）
+            if (isShuffleMode) {
+                for (let i = currentList.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [currentList[i], currentList[j]] = [currentList[j], currentList[i]];
+                }
+            }
+
             currentIndex = 0;
-            showWord();
+            resetVisibility();
+            updateCard();
         }
-    }
 
-    // 前の単語に戻る
-    function previousWord() {
-        if (currentIndex > 0) {
-            currentIndex--;
-            showWord();
-        }
-    }
-
-    // クイズをリセット
-    function resetQuiz() {
-        initQuiz();
-    }
-
-    // モード名の日本語取得
-    function getModeName(mode) {
-        switch(mode) {
-            case 'sequential': return '教科書順';
-            case 'lesson-random': return '課内ランダム';
-            case 'all-random': return '全ランダム';
-            default: return '';
-        }
-    }
-
-    // 音声読み上げ (Web Speech API)
-    function speakCurrentWord() {
-        if (quizQueue.length === 0) return;
-        const currentWord = quizQueue[currentIndex];
-        
-        // 読み上げ中の音声をキャンセル
-        window.speechSynthesis.cancel();
-        
-        const utterance = new SpeechSynthesisUtterance(currentWord.kanji);
-        utterance.lang = 'zh-CN'; // 中国語（大陸）に設定
-        utterance.rate = 0.8;    // 聞き取りやすいように少しゆっくりに
-        
-        window.speechSynthesis.speak(utterance);
-    }
-</script>
-
+        // 初期起動
+        updateCard();
+    </script>
 </body>
 </html>
