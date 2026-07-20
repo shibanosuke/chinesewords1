@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国語単語学習ツール (Chinese Vocabulary Builder)</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --card-bg: #1e1e24;
+            --primary: #4f46e5;
+            --primary-hover: #6366f1;
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: #374151;
+            --accent: #10b981;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: var(--text);
+            letter-spacing: 0.5px;
+        }
+
+        /* 設定セクション */
+        .settings-panel {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .setting-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .setting-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .mode-select-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input {
+            cursor: pointer;
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 進捗バー */
+        .progress-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .progress-bar-bg {
+            flex-grow: 1;
+            height: 6px;
+            background-color: var(--border);
+            border-radius: 3px;
+            margin: 0 12px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        /* クイズカード */
+        .flashcard {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        /* チラ見え防止のための隠し状態スタイル */
+        .word-element {
+            opacity: 1;
+            transition: opacity 0.2s ease;
+            width: 100%;
+        }
+
+        .word-element.hidden-content {
+            visibility: hidden; /* 表示OFFのときはDOM空間は保持しつつ完全に非表示 */
+            opacity: 0;
+        }
+
+        /* 切り替え時の一瞬の非表示クラス */
+        .switching {
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+
+        .lesson-tag {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            font-size: 11px;
+            background-color: var(--border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .cn-character {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: white;
+            min-height: 50px;
+            line-height: 1.2;
+        }
+
+        .cn-pinyin {
+            font-size: 18px;
+            color: var(--accent);
+            margin-bottom: 16px;
+            min-height: 24px;
+            font-family: 'Lucida Sans', 'Lucida Grande', sans-serif;
+        }
+
+        .jp-meaning {
+            font-size: 16px;
+            color: var(--text-muted);
+            min-height: 22px;
+        }
+
+        /* コントロールボタン */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .action-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .secondary-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .secondary-btn {
+            flex: 1;
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px;
+            font-size: 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .secondary-btn:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .audio-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px;
+            margin-bottom: 10px;
+            transition: color 0.2s;
+        }
+
+        .audio-btn:hover {
+            color: white;
+        }
+
+        .audio-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>中国語単語学習ツール</h1>
+
+    <!-- 設定パネル -->
+    <div class="settings-panel">
+        <!-- 出題モード設定 -->
+        <div class="setting-row">
+            <div class="section-title">出題モード</div>
+            <div class="mode-select-container">
+                <button class="mode-btn active" id="mode-sequential" onclick="setMode('sequential')">教科書順</button>
+                <button class="mode-btn" id="mode-lesson-random" onclick="setMode('lesson-random')">課内ランダム</button>
+                <button class="mode-btn" id="mode-all-random" onclick="setMode('all-random')">全ランダム</button>
+            </div>
+        </div>
+
+        <!-- 表示設定 -->
+        <div class="setting-row" style="margin-top: 20px;">
+            <div class="section-title">表示アイテム設定</div>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="show-kanji" checked onchange="updateDisplayVisibility()"> 漢字を表示
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="show-pinyin" checked onchange="updateDisplayVisibility()"> ピンインを表示
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="show-meaning" checked onchange="updateDisplayVisibility()"> 意味を表示
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 進捗バー -->
+    <div class="progress-container">
+        <span id="progress-text">0 / 0</span>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <span id="lesson-info">-</span>
+    </div>
+
+    <!-- フラッシュカード本体 -->
+    <div class="flashcard">
+        <div id="lesson-tag" class="lesson-tag">第1課</div>
+        
+        <!-- 音声再生ボタン -->
+        <button class="audio-btn" onclick="speakCurrentWord()" title="音声を再生">
+            <svg viewBox="0 0 24 24">
+                <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.07,19.86 21,16.28 21,12C21,7.72 18.07,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/>
+            </svg>
+        </button>
+
+        <!-- 各要素の表示エリア（チラ見え防止のラッパー） -->
+        <div id="card-content-wrapper">
+            <div id="display-kanji" class="cn-character word-element">你好</div>
+            <div id="display-pinyin" class="cn-pinyin word-element">nǐ hǎo</div>
+            <div id="display-meaning" class="jp-meaning word-element">こんにちは</div>
+        </div>
+    </div>
+
+    <!-- コントロールボタン -->
+    <div class="control-panel">
+        <button class="action-btn" onclick="nextWord()">
+            次へ進む
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <div class="secondary-btns">
+            <button class="secondary-btn" onclick="previousWord()">前へ</button>
+            <button class="secondary-btn" onclick="resetQuiz()">最初から</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // サンプル単語データ（教科書や課ごとのデータを想定）
+    const vocabularyList = [
+        { lesson: 1, kanji: "你好", pinyin: "nǐ hǎo", meaning: "こんにちは" },
+        { lesson: 1, kanji: "谢谢", pinyin: "xièxie", meaning: "ありがとう" },
+        { lesson: 1, kanji: "再见", pinyin: "zàijiàn", meaning: "さようなら" },
+        { lesson: 1, kanji: "我", pinyin: "wǒ", meaning: "わたし" },
+        { lesson: 2, kanji: "什么", pinyin: "shénme", meaning: "何" },
+        { lesson: 2, kanji: "名字", pinyin: "míngzi", meaning: "名前" },
+        { lesson: 2, kanji: "高兴", pinyin: "gāoxìng", meaning: "うれしい" },
+        { lesson: 3, kanji: "喝", pinyin: "hē", meaning: "飲む" },
+        { lesson: 3, kanji: "茶", pinyin: "chá", meaning: "お茶" },
+        { lesson: 3, kanji: "咖啡", pinyin: "kāfēi", meaning: "コーヒー" }
+    ];
+
+    let currentMode = 'sequential'; // 'sequential', 'lesson-random', 'all-random'
+    let quizQueue = [];
+    let currentIndex = 0;
+
+    // 初期化
+    window.onload = function() {
+        initQuiz();
+    };
+
+    // クイズキューの構築と初期化
+    function initQuiz() {
+        currentIndex = 0;
+        buildQueue();
+        showWord();
+    }
+
+    // モードに基づいて問題の順序（キュー）を作成する
+    function buildQueue() {
+        if (currentMode === 'sequential') {
+            // 1. 教科書順モード：そのままの順序
+            quizQueue = [...vocabularyList];
+        } 
+        else if (currentMode === 'lesson-random') {
+            // 2. 課内ランダムモード：課の順番(1課->2課->3課)は維持しつつ、各課の中身をシャッフル
+            quizQueue = [];
+            // まずどんな課があるか抽出
+            const lessons = [...new Set(vocabularyList.map(item => item.lesson))].sort((a, b) => a - b);
+            
+            lessons.forEach(l => {
+                // 課ごとにフィルタリングしてシャッフル
+                const lessonWords = vocabularyList.filter(item => item.lesson === l);
+                shuffleArray(lessonWords);
+                quizQueue = quizQueue.concat(lessonWords);
+            });
+        } 
+        else if (currentMode === 'all-random') {
+            // 3. 全ランダムモード：全体のリストを完全にシャッフル
+            quizQueue = [...vocabularyList];
+            shuffleArray(quizQueue);
+        }
+    }
+
+    // 配列のシャッフル（フィッシャー・イェーツ）
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    // モード切り替え
+    function setMode(mode) {
+        currentMode = mode;
+        
+        // ボタンのスタイル更新
+        document.getElementById('mode-sequential').classList.remove('active');
+        document.getElementById('mode-lesson-random').classList.remove('active');
+        document.getElementById('mode-all-random').classList.remove('active');
+        
+        document.getElementById(`mode-${mode}`).classList.add('active');
+        
+        // クイズのリセットと再構築
+        initQuiz();
+    }
+
+    // 現在の単語を画面に表示する
+    function showWord() {
+        if (quizQueue.length === 0) return;
+        
+        const wrapper = document.getElementById('card-content-wrapper');
+        
+        // 【重要】チラ見え防止対策：新データ書き換え前にラッパーごと完全に非表示(visibility: hidden)にする
+        wrapper.classList.add('switching');
+        
+        const currentWord = quizQueue[currentIndex];
+        
+        // 各要素のテキストをセット
+        document.getElementById('lesson-tag').innerText = `第 ${currentWord.lesson} 課`;
+        document.getElementById('display-kanji').innerText = currentWord.kanji;
+        document.getElementById('display-pinyin').innerText = currentWord.pinyin;
+        document.getElementById('display-meaning').innerText = currentWord.meaning;
+        
+        // 進捗表示の更新
+        document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${quizQueue.length}`;
+        document.getElementById('lesson-info').innerText = `モード: ${getModeName(currentMode)}`;
+        
+        const progressPercent = ((currentIndex + 1) / quizQueue.length) * 100;
+        document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+        
+        // 表示・非表示の個別チェックボックス状態を適用
+        updateDisplayVisibility();
+        
+        // ブラウザのレンダリングを挟むためにごく短いディレイの後に表示クラスを外す（チラ見えを完全に防ぐ）
+        setTimeout(() => {
+            wrapper.classList.remove('switching');
+        }, 30);
+    }
+
+    // チェックボックスの状態に合わせて表示・非表示を切り替える
+    function updateDisplayVisibility() {
+        const showKanji = document.getElementById('show-kanji').checked;
+        const showPinyin = document.getElementById('show-pinyin').checked;
+        const showMeaning = document.getElementById('show-meaning').checked;
+        
+        toggleElementVisibility('display-kanji', showKanji);
+        toggleElementVisibility('display-pinyin', showPinyin);
+        toggleElementVisibility('display-meaning', showMeaning);
+    }
+
+    // 要素の非表示切り替えヘルパー (display:noneだとレイアウトが崩れるため、位置を保つhidden-contentを使用)
+    function toggleElementVisibility(elementId, isVisible) {
+        const el = document.getElementById(elementId);
+        if (isVisible) {
+            el.classList.remove('hidden-content');
+        } else {
+            el.classList.add('hidden-content');
+        }
+    }
+
+    // 次の単語へ進む
+    function nextWord() {
+        if (currentIndex < quizQueue.length - 1) {
+            currentIndex++;
+            showWord();
+        } else {
+            alert('最後の単語です！最初に戻ります。');
+            currentIndex = 0;
+            showWord();
+        }
+    }
+
+    // 前の単語に戻る
+    function previousWord() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            showWord();
+        }
+    }
+
+    // クイズをリセット
+    function resetQuiz() {
+        initQuiz();
+    }
+
+    // モード名の日本語取得
+    function getModeName(mode) {
+        switch(mode) {
+            case 'sequential': return '教科書順';
+            case 'lesson-random': return '課内ランダム';
+            case 'all-random': return '全ランダム';
+            default: return '';
+        }
+    }
+
+    // 音声読み上げ (Web Speech API)
+    function speakCurrentWord() {
+        if (quizQueue.length === 0) return;
+        const currentWord = quizQueue[currentIndex];
+        
+        // 読み上げ中の音声をキャンセル
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(currentWord.kanji);
+        utterance.lang = 'zh-CN'; // 中国語（大陸）に設定
+        utterance.rate = 0.8;    // 聞き取りやすいように少しゆっくりに
+        
+        window.speechSynthesis.speak(utterance);
+    }
+</script>
+
+</body>
+</html>
